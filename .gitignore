@@ -1,0 +1,10 @@
+.vscode/settings.json
+AntiFraudServer/__pycache__/AFRules.cpython-310.pyc
+AntiFraudServer/__pycache__/AntiFraudLogic.cpython-310.pyc
+AntiFraudServer/__pycache__/config.cpython-310.pyc
+AntiFraudServer/__pycache__/database.cpython-310.pyc
+AntiFraudServer/__pycache__/Interfaces.cpython-310.pyc
+AntiFraudServer/__pycache__/lists.cpython-310.pyc
+AntiFraudServer/__pycache__/PlatFormLists.cpython-310.pyc
+AntiFraudServer/__pycache__/rules.cpython-310.pyc
+AntiFraudServer/__pycache__/setup_logger.cpython-310.pyc
