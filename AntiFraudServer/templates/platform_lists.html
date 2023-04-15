@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>Platform Lists</h1>
+<!-- Ваш код HTML для отображения таблицы -->
+<table class="table">
+    <thead>
+      <tr>
+        <th>Id</th>
+        <th>Name</th>
+        <th>Last Update</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for platform_list in platform_lists %}
+        <tr>
+          <td>{{ platform_list.id }}</td>
+          <td><a href="/platform_lists/{{ platform_list.name }}">{{ platform_list.name }}</a></td>
+          <td>{{ platform_list.last_update.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <style>
+    /* Ваш код CSS для оформления таблицы */
+.table {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  text-align: center;
+  border-collapse: collapse;
+  margin: 20px auto;
+  width: 80%;
+}
+
+.table th {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.table td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.table tr:hover {
+  background-color: #ddd;
+}
+
+.table thead tr {
+  position: sticky;
+  top: 0;
+}
+
+  </style>  
+{% endblock %}

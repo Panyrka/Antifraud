@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+  <head>
+    <title>{% block title %}{% endblock %}</title>
+  </head>
+  <body>
+    <div class="container">
+      <a href="/main">Go main page</a>
+      {% block content %}{% endblock %}
+    </div>
+    <style>
+          body {
+  background-color: #f2f2f2;
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  color: #333;
+}
+    </style>
+  </body>
+</html>
