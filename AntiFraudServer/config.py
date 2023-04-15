@@ -6,3 +6,4 @@ class UserConfig:
 
 class ApplicationConfig:
     platfrom_lists_table = 'platform_lists'
+    profiles_table = 'profiles'

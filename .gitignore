@@ -8,3 +8,5 @@ AntiFraudServer/__pycache__/lists.cpython-310.pyc
 AntiFraudServer/__pycache__/PlatFormLists.cpython-310.pyc
 AntiFraudServer/__pycache__/rules.cpython-310.pyc
 AntiFraudServer/__pycache__/setup_logger.cpython-310.pyc
+AntiFraudServer/__pycache__/flask_db.cpython-310.pyc
+.gitignore

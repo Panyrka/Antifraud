@@ -28,6 +28,14 @@ class DatabaseHandler:
         rows = self.cur.fetchall()
         return rows
     
+    def update(self, table_name: str, column: str, value: str, condition_column: str, condition_value: str):
+        query = 'UPDATE ' + table_name + ' SET ' + column + ' = ' + value + ' WHERE ' + condition_column + ' = \'' + condition_value + '\''
+        return self.execute_query(query)
+    
+    def insert(self, table_name: str, column: str, value: str):
+        query = 'INSERT INTO ' + table_name + ' SET ' + column + ' = ' + value + ' WHERE ' + condition_column + ' = \'' + condition_value + '\''
+        return self.execute_query(query)
+    
     def close_connection(self):
         self.cur.close()
         self.conn.close()

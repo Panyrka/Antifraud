@@ -11,6 +11,12 @@ class IDatabaseHandler:
     def execute_table(self, table_name: str):
         pass
     
+    def update(self, table_name: str, column: str, value: str, condition_column: str, condition_value: str):
+        pass
+    
+    def insert(self, table_name: str, column: str, value: str):
+        pass
+    
     def close_connection(self):
         pass
 
