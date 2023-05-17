@@ -1,13 +1,12 @@
 from flask import Response
 from config import UserConfig
 from Interfaces import IListHandler
-from Transaction import Transaction
-from rule_result import rule_result
-from rules import rule as active_rule
+from models import *
 from round_time import round_to_sec
 
 import flask_sqlalchemy
 import logging
+import Profile
 
 logging.basicConfig(level=UserConfig.logger_level)
 logger = logging.getLogger('AFLogic')
@@ -18,11 +17,11 @@ class AFLogic:
         self.flow = []
         pass
     
-    def initializeContext(self, list_handler: IListHandler, rules, channelList):
+    def initializeContext(self, list_handler: IListHandler, channelList, profiles_handler: Profile.ProfilesHandler):
         logger.debug('Initialize context')
         self.context['list_handler'] = list_handler
         self.context['channelLists'] = channelList
-        self.context['rules'] = rules
+        self.context['profiles_handler'] = profiles_handler
 
     def checkChannel(self, transaction: Transaction):
         logger.debug('Check Transaction Started')
@@ -36,30 +35,51 @@ class AFLogic:
     def exec_rule(self, code, transaction, context):
         cont = {'transaction': transaction, 'context': context, 'result': None}
         exec(code, globals(), cont)
-        print('here is: ', cont['result'])
         return cont['result']
     
     def checkRules(self, transaction, db):
         logger.debug('Check Rules Started')
         results = []
         rules = active_rule.query.all()
-        print("\n----\n")
+        print("Rules ", len(rules))
         for rule in rules:
             code = rule.code
             result = self.exec_rule(code, transaction, self.context)
             results.append([rule.name, rule.description, result])
-        print("\n----\n")
+            print(rule.name, result)
         logger.debug('Check Rules Finished')
         return results
 
     def saveRulesResults(self, trx: Transaction, results, db):
         #logger.debug('For client ', transaction.clientName, ':')
         for r in results:
-            print(r)
-            res = rule_result(trx.transactionId, trx.normalizedDatetime, r[0], r[2])
+            id = trx.transactionId
+            date = trx.normalizedDatetime
+            res = rule_result(id, date, r[0], r[2])
             db.session.add(res)
             db.session.commit()
+    
+    def write_profiles(self, trx: Transaction):
+        profile_handler = self.context['profiles_handler']
+        filters = profile_handler.get_filters()
+        for filter in filters:
+            result = self.exec_rule(filter['filter'], trx, self.context)
+            print(filter['name'], result)
+            if result:
+                profile_handler.write(filter['name'], trx.normalizedAmount, trx.normalizedDatetime, trx.clientId)
+                
+    def generate_alerts(self, trx: Transaction, results, db):
+        triggered_rules = ""
+        for result in results:
+            if result[2] == True:
+                triggered_rules += result[0] + "\n"
+        if triggered_rules == "":
+            return
+        generated_alert = alert(trx.id, trx.clientId, trx.normalizedDatetime, triggered_rules, "FRAUD")
+        db.session.add(generated_alert)
+        db.session.commit()
 
+    
     def transactionHandler(self, data, db: flask_sqlalchemy.SQLAlchemy):
         transaction = Transaction.from_dict(data)
         transaction.normalizedDatetime = transaction.normalizedDatetime
@@ -72,5 +92,6 @@ class AFLogic:
         
         rulesResult = self.checkRules(transaction, db)
         self.saveRulesResults(transaction, rulesResult, db)
-
+        self.write_profiles(transaction)
+        self.generate_alerts(transaction, rulesResult, db)
         return Response(response = 'OK', status = 200)

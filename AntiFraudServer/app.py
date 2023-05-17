@@ -1,21 +1,10 @@
 from flask import Flask, request, Response
 from flask_db import db
-from flask_sqlalchemy import SQLAlchemy
-from Transaction import Transaction
 from flask import render_template, redirect, request
-from platform_lists import PlatformList
-from flask_profile import flask_profile
-from rule_result import rule_result
-from sqlalchemy import select
-from list import dummy_list
-from rules import rule
+from models import *
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
-from flask_admin import BaseView, expose, BaseView, AdminIndexView
-from flask_admin.actions import action
-from flask_admin.menu import MenuLink
-from flask_admin import Admin, AdminIndexView
-from flask_admin.menu import MenuLink
+from flask_admin import AdminIndexView, expose
 
 import AntiFraudLogic
 import logging
@@ -23,8 +12,9 @@ import database
 import config
 import PlatFormLists
 import AntiFraudLogic
-import AFRules
 import datetime as dt
+import Profile
+import round_time
 
 def get_user_config():
     return config.UserConfig
@@ -37,46 +27,57 @@ def db_connect(user_config):
     db.create_connection()
     return db
 
-def getAFLogic():
+def getAFLogic(conn, app_config):
+    pl = PlatFormLists.ListsHandler(conn, app_config)
+    pl.update_list_of_lists_and_content_from_db()
+    channelList = ['Web', 'App', 'Ter']
+    profiles_handler = Profile.ProfilesHandler(conn)
+    profiles_handler.update()
+    afLogic = AntiFraudLogic.AFLogic()
+    afLogic.initializeContext(pl, channelList, profiles_handler)
+    return afLogic
+
+class MyHomeView(AdminIndexView):
+    @expose('/')
+    def index(self):
+        arg1 = 'Hello'
+        return self.render('templates/admin/graph.html', arg1=arg1)
+        
+def main():
     user_config = get_user_config()
     app_config = get_app_config()
     conn = db_connect(user_config)
-    pl = PlatFormLists.ListsHandler(conn, app_config)
-    pl.update_list_of_lists_and_content_from_db()
-    rules = AFRules.rules
-    channelList = ['Web', 'App', 'Ter']
-    afLogic = AntiFraudLogic.AFLogic()
-    afLogic.initializeContext(pl, rules, channelList)
-    return afLogic
-
-def main():
-    afLogic = getAFLogic()
+    afLogic = getAFLogic(conn, app_config)
     
     app = Flask(__name__)
+    app.secret_key = 'my_secret_key'
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@127.0.0.1:5432/AntiFraud'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = False
-
-
 
     db.init_app(app)
     app.app_context().push()
     db.create_all()
     all_lists = {}
     
+
     admin = Admin(app, name = "Antifraud", template_mode='bootstrap3')
-    admin.add_view(ModelView(Transaction, db.session, name="Тарнзакции"))
-    admin.add_view(ModelView(rule, db.session, name="Правила"))
-    admin.add_view(ModelView(PlatformList, db.session, name="Листы"))
-    admin.add_view(ModelView(rule_result, db.session, name="результаты"))
-    admin.add_view(ModelView(flask_profile, db.session, name="профили"))
-        
+    admin.add_view(ModelView(Transaction, db.session, name="Транзакции"))
+    admin.add_view(ModelView(active_rule, db.session, name="Правила"))
+    admin.add_view(ModelView(PlatformList, db.session, name="Списки"))
+    admin.add_view(ModelView(rule_result, db.session, name="Результаты сработки правил"))
+    admin.add_view(ModelView(profiles, db.session, name="Профили"))
+    admin.add_view(ModelView(alert, db.session, name="Оповещения"))
+    
+
+
+
+    
     @app.route('/transactions',methods = ["POST"])
     def parse_request():
         try:
             data = request.json
             print(type(data))
-            #transaction = Dict2Obj(data)
             response = afLogic.transactionHandler(data, db)
             return response
         except Exception as e:
@@ -113,7 +114,7 @@ def main():
     
     @app.route('/profiles')
     def index4():
-        flask_profiles = flask_profile.query.all()
+        flask_profiles = profiles.query.all()
         return render_template('profiles.html', flask_profiles=flask_profiles)
     
     @app.route('/results')
@@ -127,7 +128,7 @@ def main():
             name = request.form['name']
             code = request.form['code']
             description = request.form['description']
-            r = rule(name, description, code, dt.datetime.now())
+            r = active_rule(name, description, code, dt.datetime.now())
             db.session.add(r)
             db.session.commit()
             return redirect('/rules')            
@@ -137,11 +138,47 @@ def main():
     def index9():
         if request.method == "POST":
             this_id = request.form['id']
-            rule.query.filter_by(id=this_id).delete()
+            active_rule.query.filter_by(id=this_id).delete()
             db.session.commit()
-        res = rule.query.all()
+        res = active_rule.query.all()
         return render_template('rules.html', rules=res)
-
+    
+    @app.route('/home')
+    def index_home():
+        conn.cur.execute("""SELECT date_trunc('minute', normalized_datetime) AS minute, COUNT(*) AS count, r.rule_result
+FROM rule_Result r
+WHERE normalized_datetime >= NOW() - INTERVAL '60 minutes'
+GROUP BY minute, r.rule_result
+ORDER BY minute ASC;
+            """)
+        res = conn.cur.fetchall()
+        conn.conn.commit()
+        labels = []
+        data1 = []
+        data2 = []
+        myCounter = 0
+        for i in range(60):
+            tm = round_time.round_to_min( dt.datetime.now() - dt.timedelta(minutes=(60-i)))
+            if myCounter < len(res) and tm == res[myCounter][0]:   
+                labels.append(myCounter)
+                if (res[myCounter][2] == True):
+                    data1.append(res[myCounter][1])
+                else:
+                    data2.append(res[myCounter][1])
+                myCounter += 1 
+                if (res[myCounter][2] == True):
+                    data1.append(res[myCounter][1])
+                else:
+                    data2.append(res[myCounter][1])
+                myCounter += 1 
+            else:
+                data1.append(0)
+                data2.append(0)
+                labels.append(i)
+        res = alert.query.all()
+        lenn = len(res)
+        return render_template('graph.html', labels = labels, data1 = data1, data2 = data2, rules_triggered = myCounter, alerts = res, alerts_count = lenn)
+    
     app.run(debug=True,port=2000)
 
 if __name__ == '__main__':
