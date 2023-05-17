@@ -60,3 +60,22 @@ VALUES
 insert into black_list_ip(name, valid) values ('105.10.10.2', True);
 insert into black_list_devices(name, valid) values ('666777', True);
 insert into black_list_account(name, valid) values ('666888', True);
+
+CREATE TABLE profiles (
+  id SERIAL NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  key VARCHAR(30) NOT NULL,
+  date_segment varchar(2) NOT NULL,
+  ds_number integer not null,
+  PRIMARY KEY (id)
+);
+
+insert into profiles(name, key, date_segment, ds_number) values ('clientActivity_5y', 'clientId', 'y', 5)
+
+CREATE TABLE clientActivity_5y (
+  id SERIAL NOT NULL,
+  key VARCHAR(64) NOT NULL,
+  amount double precision NOT NULL,
+  date_segment timestamp NOT NULL,
+  PRIMARY KEY (id)
+);

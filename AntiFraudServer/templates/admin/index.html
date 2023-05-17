@@ -1,0 +1,170 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
+
+<div class="container">
+  <div class="row">
+    <div class="col left">
+      <h2>Статистика</h2>
+      <canvas id="myChart"></canvas>
+    </div>
+    <div class="col right">
+      <h2>Результаты</h2>
+      <h3>Правил сработано: </h3>
+      <h3>{{rules_triggered}}</h3>
+      <h3>Приостановлено операций: </h3>
+      <h3>{{alerts_count}} </h3>
+    </div>
+  </div>
+  <div class="notifications">
+    <h2>Последние оповещения</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Номер оповещения</th>
+          <th>Номер транзакции</th>
+          <th>Дата</th>
+          <th>Клиент</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for alert in alerts %}
+          <tr>
+            <td>{{ alert.id }}</td>
+            <td>{{ alert.transaction_id }}</td>
+            <td>{{ alert.normalized_datetime }}</td>
+            <td>{{ alert.client_id }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<script>
+    const ctx = document.getElementById('myChart').getContext('2d');
+    
+    var myChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels:  {{ data1 }},
+        datasets: [{
+          label: 'правила true',
+          data: {{data1}},
+          borderColor: 'rgb(255, 99, 132)',
+          tension: 0.1
+        },
+        {
+          label: 'правила false',
+          data: {{data2}},
+          borderColor: 'rgb(54, 162, 235)',
+          tension: 0.1
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          title: {
+            display: true,
+            text: 'Example Chart'
+          },
+          legend: {
+            display: true,
+            labels: {
+              fontColor: 'black'
+            }
+          }
+        }
+      }
+    });
+
+    </script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+      header {
+        background-color: #333;
+        color: #fff;
+        padding: 20px;
+        text-align: center;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      .row {
+
+        display: flex;
+        flex-direction: row;
+        flex: 1;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+      }
+      .left {
+        background-color: #eee;
+        flex: 0.6;
+        padding: 20px;
+        width: 60%;
+      }
+      .right {
+        background-color: #ccc;
+        flex: 0.4;
+        padding: 20px;
+      }
+      .notifications {
+        background-color: #f5f5f5;
+        padding: 20px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 24px;
+      }
+      .table {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  text-align: center;
+  border-collapse: collapse;
+  margin: 20px auto;
+  width: 80%;
+}
+
+.table th {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.table td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.table tr:hover {
+  background-color: #ddd;
+}
+
+.table thead tr {
+  position: sticky;
+  top: 0;
+}
+    </style>
+{% endblock %}

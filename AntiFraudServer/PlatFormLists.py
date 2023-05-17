@@ -39,7 +39,6 @@ class PlatformList:
     
     def exist_in_list(self, key: str):
         value = self.list_values.get(key)
-        print(value)
         if value is None:
             return False
         if value.valid:
@@ -48,7 +47,6 @@ class PlatformList:
     
     def exist_in_list_by_time(self, key: str, date: datetime):
         value = self.list_values.get(key)
-        print(value)
         if value is None:
             return False
         if value.valid:

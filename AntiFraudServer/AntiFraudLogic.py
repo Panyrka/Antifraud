@@ -1,8 +1,12 @@
 from flask import Response
 from config import UserConfig
 from Interfaces import IListHandler
+from models import *
+from round_time import round_to_sec
 
+import flask_sqlalchemy
 import logging
+import Profile
 
 logging.basicConfig(level=UserConfig.logger_level)
 logger = logging.getLogger('AFLogic')
@@ -10,15 +14,16 @@ logger = logging.getLogger('AFLogic')
 class AFLogic:
     def __init__(self):
         self.context = {}
+        self.flow = []
         pass
     
-    def initializeContext(self, list_handler: IListHandler, rules, channelList):
+    def initializeContext(self, list_handler: IListHandler, channelList, profiles_handler: Profile.ProfilesHandler):
         logger.debug('Initialize context')
         self.context['list_handler'] = list_handler
         self.context['channelLists'] = channelList
-        self.context['rules'] = rules
+        self.context['profiles_handler'] = profiles_handler
 
-    def checkChannel(self, transaction):
+    def checkChannel(self, transaction: Transaction):
         logger.debug('Check Transaction Started')
         if transaction.channel in self.context['channelLists']:
             logger.debug('Check Transaction Successfully Finished')
@@ -26,27 +31,67 @@ class AFLogic:
         else:
             logger.error('Check Transaction Error: Transaction Channel')
             return False, 'Bad transaction channel!'
-
-    def checkRules(self, transaction):
+        
+    def exec_rule(self, code, transaction, context):
+        cont = {'transaction': transaction, 'context': context, 'result': None}
+        exec(code, globals(), cont)
+        return cont['result']
+    
+    def checkRules(self, transaction, db):
         logger.debug('Check Rules Started')
         results = []
-        for rule in self.context['rules']:
-            result = rule(transaction, self.context)
-            results.append(result)
+        rules = active_rule.query.all()
+        print("Rules ", len(rules))
+        for rule in rules:
+            code = rule.code
+            result = self.exec_rule(code, transaction, self.context)
+            results.append([rule.name, rule.description, result])
+            print(rule.name, result)
         logger.debug('Check Rules Finished')
         return results
 
-    def saveRulesResults(self, transaction, results):
-        logger.debug('For client ', transaction.clientName, ':')
+    def saveRulesResults(self, trx: Transaction, results, db):
+        #logger.debug('For client ', transaction.clientName, ':')
         for r in results:
-            print(r)
+            id = trx.transactionId
+            date = trx.normalizedDatetime
+            res = rule_result(id, date, r[0], r[2])
+            db.session.add(res)
+            db.session.commit()
+    
+    def write_profiles(self, trx: Transaction):
+        profile_handler = self.context['profiles_handler']
+        filters = profile_handler.get_filters()
+        for filter in filters:
+            result = self.exec_rule(filter['filter'], trx, self.context)
+            print(filter['name'], result)
+            if result:
+                profile_handler.write(filter['name'], trx.normalizedAmount, trx.normalizedDatetime, trx.clientId)
+                
+    def generate_alerts(self, trx: Transaction, results, db):
+        triggered_rules = ""
+        for result in results:
+            if result[2] == True:
+                triggered_rules += result[0] + "\n"
+        if triggered_rules == "":
+            return
+        generated_alert = alert(trx.id, trx.clientId, trx.normalizedDatetime, triggered_rules, "FRAUD")
+        db.session.add(generated_alert)
+        db.session.commit()
 
-    def transactionHandler(self, transaction):
+    
+    def transactionHandler(self, data, db: flask_sqlalchemy.SQLAlchemy):
+        transaction = Transaction.from_dict(data)
+        transaction.normalizedDatetime = transaction.normalizedDatetime
+        db.session.add(transaction)
+        db.session.commit()
+        
         successfully, desc = self.checkChannel(transaction)
         if not successfully:
             return Response(response=desc, status=503)
         
-        rulesResult = self.checkRules(transaction)
-        self.saveRulesResults(transaction, rulesResult)
-
+        rulesResult = self.checkRules(transaction, db)
+        self.saveRulesResults(transaction, rulesResult, db)
+        self.write_profiles(transaction)
+        self.generate_alerts(transaction, rulesResult, db)
         return Response(response = 'OK', status = 200)

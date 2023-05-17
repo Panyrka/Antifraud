@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Transactions Table</h1>
+    <table class="table">
+      <thread>
+        <tr>
+          <th>id</th>
+          <th>transactionId</th>
+          <th>channel</th>
+          <th>transactionType</th>
+          <th>clientId</th>
+          <th>cardKey</th>
+          <th>phone</th>
+          <th>clientName</th>
+          <th>payeeAccNumber</th>
+          <th>payeeName</th>
+          <th>payeePhone</th>
+          <th>normalizedAmount</th>
+          <th>amount</th>
+          <th>currency</th>
+          <th>normalizedDatetime</th>
+          <th>datetime</th>
+          <th>timezone</th>
+          <th>clientIp</th>
+          <th>clientLocation</th>
+          <th>deviceId</th>
+        </tr>
+      </thread>
+      <tbody>
+        {% for transaction in transactions %}
+          <tr>
+            <td>{{ transaction.id }}</td>
+            <td>{{ transaction.transactionId }}</td>
+            <td>{{ transaction.channel }}</td>
+            <td>{{ transaction.transactionType }}</td>
+            <td>{{ transaction.clientId }}</td>
+            <td>{{ transaction.cardKey }}</td>
+            <td>{{ transaction.phone }}</td>
+            <td>{{ transaction.clientName }}</td>
+            <td>{{ transaction.payeeAccNumber }}</td>
+            <td>{{ transaction.payeeName }}</td>
+            <td>{{ transaction.payeePhone }}</td>
+            <td>{{ transaction.normalizedAmount }}</td>
+            <td>{{ transaction.amount }}</td>
+            <td>{{ transaction.currency }}</td>
+            <td>{{ transaction.normalizedDatetime }}</td>
+            <td>{{ transaction.datetime }}</td>
+            <td>{{ transaction.timezone }}</td>
+            <td>{{ transaction.clientIp }}</td>
+            <td>{{ transaction.clientLocation }}</td>
+            <td>{{ transaction.deviceId }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <style>
+      /* Ваш код CSS для оформления таблицы */
+.table {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  text-align: center;
+  border-collapse: collapse;
+  margin: 20px auto;
+  width: 80%;
+}
+
+.table th {
+  background-color: #4CAF50;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.table td {
+  padding: 8px;
+  text-align: center;
+  border-bottom: 1px solid #ddd;
+}
+
+.table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.table tr:hover {
+  background-color: #ddd;
+}
+
+.table thead tr {
+  position: sticky;
+  top: 0;
+}
+
+    </style>
+ {% endblock %}
