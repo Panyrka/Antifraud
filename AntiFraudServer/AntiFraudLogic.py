@@ -45,8 +45,9 @@ class AFLogic:
         for rule in rules:
             code = rule.code
             result = self.exec_rule(code, transaction, self.context)
-            results.append([rule.name, rule.description, result])
+            results.append([rule.name, rule.description, result, rule.rule_result_status])
             print(rule.name, result)
+        print(results)
         logger.debug('Check Rules Finished')
         return results
 
@@ -70,15 +71,25 @@ class AFLogic:
                 
     def generate_alerts(self, trx: Transaction, results, db):
         triggered_rules = ""
+        is_decline = False
         for result in results:
             if result[2] == True:
-                triggered_rules += result[0] + "\n"
+                triggered_rules += result[0] + " "
+                if result[3] == RULE_RESULT_STATUS.DECLINE:
+                    is_decline = True
         if triggered_rules == "":
-            return
-        generated_alert = alert(trx.id, trx.clientId, trx.normalizedDatetime, triggered_rules, "FRAUD")
-        db.session.add(generated_alert)
-        db.session.commit()
-
+            return 'ALLOW'
+        STATUS_CHOICES = ("FRAUD", "NEW", "LEGITIMATE")
+        if is_decline:
+            generated_alert = alert(trx.id, trx.clientId, trx.normalizedDatetime, triggered_rules, STATUS_CHOICES_ENUM.FRAUD)
+            db.session.add(generated_alert)
+            db.session.commit()
+            return 'DECLINE'
+        else:
+            generated_alert = alert(trx.id, trx.clientId, trx.normalizedDatetime, triggered_rules, STATUS_CHOICES_ENUM.NEW)
+            db.session.add(generated_alert)
+            db.session.commit()
+            return 'ALLOW'
     
     def transactionHandler(self, data, db: flask_sqlalchemy.SQLAlchemy):
         transaction = Transaction.from_dict(data)
@@ -93,5 +104,5 @@ class AFLogic:
         rulesResult = self.checkRules(transaction, db)
         self.saveRulesResults(transaction, rulesResult, db)
         self.write_profiles(transaction)
-        self.generate_alerts(transaction, rulesResult, db)
-        return Response(response = 'OK', status = 200)
+        result = self.generate_alerts(transaction, rulesResult, db)
+        return Response(response = result, status = 200)

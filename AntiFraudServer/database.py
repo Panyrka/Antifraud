@@ -13,7 +13,9 @@ class DatabaseHandler:
         self.conn = psycopg2.connect(
             dbname=self.config.DB_NAME,
             user=self.config.DB_USER,
-            password=self.config.DB_PASSWORD
+            password=self.config.DB_PASSWORD,
+            host='127.0.0.1',
+            port=5432
         )
         self.cur = self.conn.cursor()
         logger.info('Connected to database')

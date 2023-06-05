@@ -3,7 +3,7 @@ import json
 from datetime import datetime
 from random import randint
 
-url = "http://localhost:2000/transactions"
+url = "http://127.0.0.1:2000/transactions"
 headers = {"Content-Type": "application/json"}
 
 channel = randint(0,2)
@@ -26,7 +26,7 @@ data = {
     "payeeAccNumber": '1',
     "payeeName": "фa Konovalova",
     "payeePhone": "1",
-    "normalizedAmount": 123400,
+    "normalizedAmount": 2000000,
     "amount": None,
     "currency": "",
     "normalizedDatetime": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -37,6 +37,15 @@ data = {
     "deviceId": "1"
 }
 
+print( json.dumps(data))
+
+responsed = requests.post(url, headers=headers, data=json.dumps(data))
+
+print(responsed)
+print(responsed.text)
+
+
+exit(1)
 #json_data = json.dumps(data)
 
 #responsed = requests.post(url, headers=headers, data=json_data)
