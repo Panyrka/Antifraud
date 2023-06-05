@@ -1,25 +1,20 @@
 {% extends 'admin/master.html' %}
 
-
-{% block content %}
+{% block body %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.5.0/Chart.min.js"></script>
 <header>
   <h1>Статистика</h1>
 </header>
 <div class="container">
-  <div class="row">
-    <div class="col left">
-      <h2>Статистика</h2>
-      <canvas id="myChart"></canvas>
-    </div>
-    <div class="col right">
-      <h2>Результаты</h2>
-      <h3>Правил сработано: </h3>
-      <h3>{{rules_triggered}}</h3>
-      <h3>Приостановлено операций: </h3>
-      <h3>{{alerts_count}} </h3>
-    </div>
-  </div>
+  <div id="top">
+    <h3>Правил сработано {{rules_triggered}}</h3>
+    <h3>Приостановлено операций {{alerts_count}}</h3>
+</div>
+<div id="main">
+  <canvas id="myChart"></canvas>
+</div>
+
+
   <div class="notifications">
     <h2>Последние оповещения</h2>
     <table class="table">
@@ -169,5 +164,18 @@
   position: sticky;
   top: 0;
 }
+
+#container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+        
+        #top {
+            margin-bottom: 20px;
+        }
     </style>
 {% endblock %}

@@ -3,6 +3,11 @@ import json
 
 from flask_db import db
 from typing import Optional
+from sqlalchemy import Column, Enum, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+
+import enum
+from sqlalchemy import Enum
 
 class profiles(db.Model):
     __tablename__ = 'profiles'
@@ -26,6 +31,10 @@ class profiles(db.Model):
     def __repr__(self):
         return f"<RuleResult {self.id}>"
 
+class RULE_RESULT_STATUS(enum.Enum):
+    ALLOW = 1
+    DECLINE = 2
+
 class active_rule(db.Model):
     __tablename__ = 'rules'
 
@@ -33,13 +42,15 @@ class active_rule(db.Model):
     name = db.Column(db.String(64), nullable=False)
     description = db.Column(db.String(512), nullable=False)
     code = db.Column(db.Text,  nullable=False)
+    rule_result_status = Column("Rule result status", Enum(RULE_RESULT_STATUS), nullable=False)
     last_update = db.Column(db.String(64), nullable=False, default=dt.datetime.now())
     
-    def __init__(self, name: str, description: str, code: str, last_update: dt.datetime):
+    def __init__(self, name: str, description: str, code: str, last_update: dt.datetime, rule_result_status: RULE_RESULT_STATUS):
         self.name = name
         self.description = description
         self.code = code
         self.last_update = last_update
+        self.rule_result_status = rule_result_status
 
     def __repr__(self):
         return f"<RuleResult {self.id}>"
@@ -62,12 +73,12 @@ class rule_result(db.Model):
     def __repr__(self):
         return f"<RuleResult {self.id}>"
 
-from sqlalchemy import Column, Enum, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-
 Base = declarative_base()
-
-STATUS_CHOICES = ("FRAUD", "OK", "LEGITIMATE")
+ 
+class STATUS_CHOICES_ENUM(enum.Enum):
+    FRAUD = 1
+    NEW = 2
+    LEGITIMATE = 3
 
 class alert(db.Model):
     __tablename__ = 'alerts'
@@ -77,9 +88,9 @@ class alert(db.Model):
     client_id = db.Column(db.String(64), nullable=False)
     normalized_datetime = db.Column(db.DateTime,  nullable=False)
     triggered_rules = db.Column(db.String(1024), nullable=False)
-    status = Column(Enum(*STATUS_CHOICES, name="status"))
+    status = Column('Alert status', Enum(STATUS_CHOICES_ENUM), nullable=False)
     
-    def __init__(self, transactionId: str, client_id: str, normalized_datetime: dt.datetime, triggered_rules: str, status):
+    def __init__(self, transactionId: str, client_id: str, normalized_datetime: dt.datetime, triggered_rules: str, status: STATUS_CHOICES_ENUM):
         self.transaction_id = transactionId
         self.client_id = client_id
         self.normalized_datetime = normalized_datetime

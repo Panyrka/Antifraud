@@ -1,0 +1,13 @@
+{% extends 'admin/model/edit.html' %}
+
+{% block extra_nav %}
+    <div class="extra-button">
+        <a href="{{ url_for('admin.your_custom_view', id=current_id) }}" class="btn btn-secondary">Дополнительная кнопка</a>
+    </div>
+    <style>
+        .extra-button {
+    margin-top: 10px;
+    text-align: right;
+}
+    </style>
+{% endblock %}
