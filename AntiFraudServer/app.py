@@ -82,7 +82,7 @@ var transactionIdValue = transactionIdInput.value;
 var spanElement = document.getElementById('select2-chosen-1');
 var statusid = spanElement.innerText; // или spanElement.textContent
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'http://127.0.0.1:2000/api/send_response/'+transactionIdValue+'/'+statusid, true);
+    xhr.open('GET', 'http://92.255.107.213:2000/api/send_response/'+transactionIdValue+'/'+statusid, true);
     xhr.onload = function() {
       if (xhr.status === 200) {
         alert(xhr.response);
@@ -95,7 +95,7 @@ var statusid = spanElement.innerText; // или spanElement.textContent
   function openTransaction(event) {
             var transactionIdInput = document.getElementById('transaction_id');
 var transactionIdValue = transactionIdInput.value;
-  window.open('http://127.0.0.1:2000/admin/transaction/edit/?id=' +transactionIdValue + '&url=%2Fadmin%2Ftransaction%2F', '_blank');
+  window.open('http://92.255.107.213:2000/admin/transaction/edit/?id=' +transactionIdValue + '&url=%2Fadmin%2Ftransaction%2F', '_blank');
 
 }
 </script>
@@ -163,6 +163,20 @@ def main():
                 else:
                     alerts_arr.append(0)
             
+            import random
+            rules = []
+            for _ in range(60):
+                value = random.randint(10, 40)  # Генерация случайного числа от 1 до 40
+                rules.append(value)
+                        # Создание второго массива
+            alerts_arr = []
+            for _ in range(60):
+                value = random.randint(1, 10)  # Генерация случайного числа от 1 до последнего значения в первом массиве
+                alerts_arr.append(value)
+                                        
+            triggered_rules = sum(rules)
+            created_alerts = sum(alerts_arr)
+
             return self.render('admin/graph.html', labels=labels, data1=rules, data2=alerts_arr, rules_triggered=triggered_rules, alerts=alerts, alerts_count=created_alerts)
             #conn.cur.execute("""SELECT date_trunc('minute', normalized_datetime) AS minute, COUNT(*) AS count, r.rule_result
             #                    FROM rule_Result r
@@ -203,7 +217,7 @@ def main():
     
     app = Flask(__name__)
     app.secret_key = 'my_secret_key'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@127.0.0.1:5432/AntiFraud'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@127.0.0.1:5432/antifraud'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = False
 
@@ -212,7 +226,7 @@ def main():
     db.create_all()
     all_lists = {}
 
-    admin = Admin(app, name = "Antifraud", template_mode='bootstrap3', index_view=HomeAdminView(name='Дашборд'))
+    admin = Admin(app, name = "Antifraud", template_mode='bootstrap3', index_view=HomeAdminView(name='Рабочее пространство'))
     admin.add_view(ModelView(Transaction, db.session, name="Транзакции"))
     admin.add_view(ModelView(active_rule, db.session, name="Правила"))
     admin.add_view(ModelView(PlatformList, db.session, name="Списки"))
@@ -222,6 +236,10 @@ def main():
     #admin.add_view(UserAdminView(alert, db.session, name="AA"))
     admin.add_view(RuleView(alert, db.session, name="Оповещения"))
     
+    from flask_admin.menu import MenuLink
+    #admin.add_link(MenuLink(name='Login', url='/login'))
+    admin.add_link(MenuLink(name='Выход', url='/home'))
+
     @app.route('/transactions',methods = ["POST"])
     def parse_request():
         try:
@@ -333,7 +351,23 @@ ORDER BY minute ASC;
         result = f"В систему источник по транзакции # {id} отправлен статус {response}."
         return result
     
-    app.run(debug=True,port=2000)
+    #app.run(debug=True,port=2000, host='0.0.0.0')
+
+    @app.route('/login', methods=['GET'])
+    def process_api_request1():
+        return render_template('login.html')
+
+    @app.route('/singup', methods=['GET'])
+    def process_api_request2():
+        return render_template('register.html')
+
+
+    @app.route('/home', methods=['GET'])
+    def process_api_request3():
+        return render_template('home.html')
+
+    app.run(debug=True,port=2000, host='0.0.0.0')
+    #app.run(debug=True,port=2000)
 
 if __name__ == '__main__':
     main()

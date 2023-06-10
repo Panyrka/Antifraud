@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Authorization Page</title>
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f2f2f2;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    
+    .container {
+      max-width: 600px;
+      padding: 20px;
+      text-align: center;
+      background-color: #fff;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    }
+    
+    h2 {
+      color: #333;
+    }
+    
+    .message {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+    
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 4px;
+      background-color: #337ab7;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    
+    .btn:hover {
+      background-color: #286090;
+    }
+    
+    .link {
+      color: #337ab7;
+      text-decoration: none;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Вы не авторизованы! Зарегистрируйте аккаунт или авторизуйтесь!</h2>
+    <div class="message">
+      <a href="/singup" class="btn">Регистрация</a>
+      <a href="/login" class="btn">Авторизация</a>
+    </div>
+  </div>
+</body>
+</html>
+
