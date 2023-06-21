@@ -22,6 +22,8 @@
         <tr>
           <th>Номер оповещения</th>
           <th>Номер транзакции</th>
+          <th>Номер клиента</th>
+          <th>Сработавшие правила</th>
           <th>Дата</th>
           <th>Клиент</th>
         </tr>
@@ -29,8 +31,14 @@
       <tbody>
         {% for alert in alerts %}
           <tr>
-            <td>{{ alert.id }}</td>
+            <td>
+            <a href="http://127.0.0.1:2000/admin/alert/edit/?id={{ alert.id }}&url=%2Fadmin%2Falert%2F">
+              {{ alert.id }}
+            </a>
+            </td>
             <td>{{ alert.transaction_id }}</td>
+            <td>{{ alert.client_id }}</td>
+            <td>{{ alert.triggered_rules }}</td>
             <td>{{ alert.normalized_datetime }}</td>
             <td>{{ alert.client_id }}</td>
           </tr>
@@ -47,7 +55,7 @@
     var myChart = new Chart(ctx, {
       type: 'line',
       data: {
-        labels:  {{ data1 }},
+        labels:  {{ labels }},
         datasets: [{
           label: 'Правила',
           data: {{data1}},

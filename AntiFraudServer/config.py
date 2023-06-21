@@ -1,7 +1,7 @@
 class UserConfig:
-    DB_NAME = 'antifraud'
+    DB_NAME = 'AntiFraud'
     DB_USER = 'postgres'
-    DB_PASSWORD = 'password'
+    DB_PASSWORD = 'postgres'
     logger_level = 10 # debug
 
 class ApplicationConfig:

@@ -1,0 +1,260 @@
+<html>
+<head>
+<script>
+// Функция для обновления количества клиентов
+
+let clients = []
+let channels = ['Web', 'App', 'Ter']
+let cities = ['Saint Petersburg', 'Moscow', 'Novosibirsk', 'Omsk', 'Kazan', 'Tver', 'Vladivastok']
+
+async function fetchClientsFromAPI(n) {
+  const endpoint = `http://127.0.0.1:2000/api/generate_random_clients/${n}`;
+
+  try {
+    const response = await fetch(endpoint);
+    const data = await response.json();
+
+    clients = data.map((clientData, index) => {
+      const [fullName, phoneNumber, cardNumber, id] = clientData;
+      return {
+        id: index,
+        fullName,
+        phoneNumber,
+        cardNumber: cardNumber
+      };
+    });
+
+    // Do something with the clients array
+    console.log(clients);
+    // You can store it in a global variable, pass it to another function, etc.
+
+  } catch (error) {
+    console.error('Error fetching clients:', error);
+  }
+}
+
+
+function create_clients() {
+  // Получаем элемент с id="num" и читаем его значение
+  var input = document.getElementById("num");
+  var n = input.value;
+  // Проверяем, что n - это число от 0 до 10000
+  if (isNaN(n) || n <= 1 || n > 10000) {
+    alert("Ошибка! Введите число от 2 до 10000");
+    return;
+  }
+  // Получаем элемент с id="count" и меняем его текст на n
+  var count = document.getElementById("count");
+  count.textContent = "Текущее количество клиентов: " + n;
+
+    fetchClientsFromAPI(n);
+
+}
+
+function show_clients() {
+  // Sample array of clients
+
+  // Create the modal element
+  const modal = document.createElement('div');
+  modal.classList.add('modal');
+
+  // Create the table element
+  const table = document.createElement('table');
+
+  // Create the table header row
+  const headerRow = document.createElement('tr');
+  const headers = ['ID', 'Full Name', 'Phone Number', 'Card Number'];
+  headers.forEach(headerText => {
+    const th = document.createElement('th');
+    th.textContent = headerText;
+    headerRow.appendChild(th);
+  });
+  table.appendChild(headerRow);
+
+  // Create table rows for each client
+  clients.forEach(client => {
+    const row = document.createElement('tr');
+    const { id, fullName, phoneNumber, cardNumber } = client;
+    const rowData = [id, fullName, phoneNumber, cardNumber];
+    rowData.forEach(data => {
+      const cell = document.createElement('td');
+      cell.textContent = data;
+      row.appendChild(cell);
+    });
+    table.appendChild(row);
+  });
+
+  // Create the close button
+  const closeButton = document.createElement('button');
+  closeButton.textContent = 'Close';
+  closeButton.addEventListener('click', () => {
+    modal.remove();
+  });
+
+  // Append the table and close button to the modal
+  modal.appendChild(table);
+  modal.appendChild(closeButton);
+
+  // Append the modal to the body of the document
+  document.body.appendChild(modal);
+}
+
+function getAmount() {
+  if (Math.floor(Math.random() * 10) + 1 > 8) {
+    return Math.floor(Math.random() * (2000000 - 50000 + 1)) + 50000;
+  } else {
+    return Math.floor(Math.random() * (50000 - 100 + 1)) + 100;
+  }
+}
+
+function sendTransactionsData(data) {
+  fetch('http://localhost:2000/transactions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+    .then(response => response.json())
+    .then(result => {
+      console.log(result);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+}
+
+function send_transactions(number)
+{
+    for(let i = 0; i < number; ++i)
+    {
+        const ourClientId = Math.floor(Math.random() * clients.length);
+        let ourPayeeId = Math.floor(Math.random() * clients.length);
+        while(ourClientId==ourPayeeId)
+        {
+            ourPayeeId = Math.floor(Math.random() * clients.length);
+        }
+
+        const c = clients[ourClientId]
+        const p = clients[ourPayeeId]
+
+        const transactionId = String(Math.floor(Math.random() * 10000001) + 10000000);
+        const channel = channels[Math.floor(Math.random() * channels.length)];
+        const transactionType = Math.random() < 0.5 ? "FL" : "UL";
+        const clientId = c['id'];
+        const cardKey = c['cardNumber'];
+        const phone = c['phoneNumber'];
+        const clientName = c['fullName'];
+        const payeeAccNumber = p['cardNumber'];
+        const payeeName = p['fullName'];
+        const payeePhone = p['phoneNumber'];
+        const normalizedAmount = String(getAmount());
+        const amount = null;
+        const currency = "";
+        const normalizedDatetime = new Date().toISOString().split("T")[0] + " " + new Date().toISOString().split("T")[1].split(".")[0];
+        const datetime = null;
+        const timezone = "no";
+        const clientIp =  "90.12." + Math.floor(Math.random() * 254) + 1 + "." + (Math.floor(Math.random() * 254) + 1);
+        const clientLocation = cities[Math.floor(Math.random() * cities.length)];
+
+        const randomNumber = Math.floor(Math.random() * (70000 - 50000 + 1)) + 50000;
+        const deviceId = "AB-836-" + randomNumber;
+
+        const data = {
+        transactionId,
+        channel,
+        transactionType,
+        clientId,
+        cardKey,
+        phone,
+        clientName,
+        payeeAccNumber,
+        payeeName,
+        payeePhone,
+        normalizedAmount,
+        amount,
+        currency,
+        normalizedDatetime,
+        datetime,
+        timezone,
+        clientIp,
+        clientLocation,
+        deviceId
+        };
+        
+        sendTransactionsData(data)
+        return data;
+    }
+}
+</script>
+</head>
+<body>
+    <div id="container">
+        <h1 id="count">Текущее количество клиентов: 0</h1>
+        <div class="input-wrapper">
+            <label for="num">Количество клиентов</label>
+            <input id="num" type="number" min="2" max="10000" value="0">
+        </div>
+        <br>
+        <button onclick="create_clients()">Создать клиентов</button> 
+        <button onclick="show_clients()">Посмотреть клиентов</button>
+    </div>
+</body>
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f1f1f1;
+        font-family: Arial, sans-serif;
+    }
+    
+    #container {
+        width: 6    00px;
+        padding: 20px;
+        border: 1px solid #ccc;
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    h1 {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    
+    .input-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+    }
+    
+    label {
+        margin-right: 10px;
+    }
+    
+    input {
+        padding: 5px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
+    button {
+        font-size: 18px;
+        padding: 10px 20px;
+        background-color: #4CAF50;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    
+    button:hover {
+        background-color: #45a049;
+    }
+</style>
+</html>

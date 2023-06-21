@@ -1,49 +1,74 @@
 import requests
 import json
 from datetime import datetime
-from random import randint
+from random import randint, choice
+import names
 
 url = "http://127.0.0.1:2000/transactions"
 headers = {"Content-Type": "application/json"}
 
-channel = randint(0,2)
-if channel == 0:
-    channel = 'Web'
-elif channel == 1:
-    channel = 'App'
-else:
-    channel = "Ter"
+channels = ['Web', 'App', 'Ter']
+cities = ['Saint Petersburg', 'Moscow', 'Novosibirsk', 'Omsk', 'Kazan', 'Tver', 'Vladivastok']
 
+def get_amount():
+    if randint(1, 10) > 8:
+        return randint(50_000, 2_000_000)
+    return randint(100, 50_000)
 
-data = {
-    "transactionId": str(randint(1,100000)),
-    "channel": channel,
-    "transactionType": "FL" if randint(0,1) else "UL",
-    "clientId": str(1),
-    "cardKey": "1",
-    "phone": "+1",
-    "clientName": "a Filippov",
-    "payeeAccNumber": '1',
-    "payeeName": "фa Konovalova",
-    "payeePhone": "1",
-    "normalizedAmount": 2000000,
-    "amount": None,
-    "currency": "",
-    "normalizedDatetime": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-    "datetime": None,
-    "timezone": "no",
-    "clientIp": "125.20.10.22",
-    "clientLocation": "Saint Petersburg",
-    "deviceId": "1"
-}
+def ger_random_card():
+    return "550043215566"+str(randint(1111,8888))
 
-print( json.dumps(data))
+def get_random_phone():
+    return "+7911555"+str(randint(1111,9999))
 
-responsed = requests.post(url, headers=headers, data=json.dumps(data))
+def get_random_id():
+    return str(randint(100000,200000));
 
-print(responsed)
-print(responsed.text)
+def get_random_person():
+    return [names.get_full_name(), get_random_phone(), ger_random_card(), get_random_id()]
 
+NUMBER_OF_CLIENTS = int(input('Введите количество клиентов: '))
+COUNT = int(input('Введите количество транзакций: '))
+answers = {'DECLINE': 0, 'ALLOW': 0}
+persons = []
+
+for i in range(NUMBER_OF_CLIENTS):
+    persons.append(get_random_person())
+
+for i in range(COUNT):
+    client = choice(persons)
+    payee = choice(persons)
+    while payee == client:
+        payee = choice(persons)
+    data = {
+        "transactionId": str(randint(10_000_000, 20_000_000)),
+        "channel": choice(channels),
+        "transactionType": "FL" if randint(0,1) else "UL",
+        "clientId": client[3],
+        "cardKey": client[2],
+        "phone": client[1],
+        "clientName": client[0],
+        "payeeAccNumber": payee[2],
+        "payeeName": payee[0],
+        "payeePhone": payee[1],
+        "normalizedAmount": str(get_amount()),
+        "amount": None,
+        "currency": "",
+        "normalizedDatetime": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "datetime": None,
+        "timezone": "no",
+        "clientIp": "90.12."+str(randint(1,254))+"."+str(randint(1,254)),
+        "clientLocation": choice(cities),
+        "deviceId": "AB-836-"+str(randint(50000,70000))
+    }
+
+    responsed = requests.post(url, headers=headers, data=json.dumps(data))
+    # print(responsed)
+    print('Результат транзакции #' + str(i) + ": " + responsed.text)
+    
+    answers[responsed.text] += 1
+
+print(answers)
 
 exit(1)
 #json_data = json.dumps(data)

@@ -1,4 +1,4 @@
-from flask import Flask, request, Response
+from flask import Flask, request, Response, jsonify
 from flask_db import db
 from flask import render_template, redirect, request
 from models import *
@@ -15,6 +15,35 @@ import AntiFraudLogic
 import datetime as dt
 import Profile
 import round_time
+
+import requests
+import json
+from datetime import datetime
+from random import randint, choice
+import names
+
+url = "http://127.0.0.1:2000/transactions"
+headers = {"Content-Type": "application/json"}
+
+channels = ['Web', 'App', 'Ter']
+cities = ['Saint Petersburg', 'Moscow', 'Novosibirsk', 'Omsk', 'Kazan', 'Tver', 'Vladivastok']
+
+def get_amount():
+    if randint(1, 10) > 8:
+        return randint(50_000, 2_000_000)
+    return randint(100, 50_000)
+
+def ger_random_card():
+    return "550043215566"+str(randint(1111,8888))
+
+def get_random_phone():
+    return "+7911555"+str(randint(1111,9999))
+
+def get_random_id():
+    return str(randint(100000,200000));
+
+def get_random_person():
+    return [names.get_full_name(), get_random_phone(), ger_random_card(), get_random_id()]
 
 def get_user_config():
     return config.UserConfig
@@ -82,7 +111,7 @@ var transactionIdValue = transactionIdInput.value;
 var spanElement = document.getElementById('select2-chosen-1');
 var statusid = spanElement.innerText; // или spanElement.textContent
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'http://92.255.107.213:2000/api/send_response/'+transactionIdValue+'/'+statusid, true);
+    xhr.open('GET', 'http://127.0.0.1:2000/api/send_response/'+transactionIdValue+'/'+statusid, true);
     xhr.onload = function() {
       if (xhr.status === 200) {
         alert(xhr.response);
@@ -95,14 +124,11 @@ var statusid = spanElement.innerText; // или spanElement.textContent
   function openTransaction(event) {
             var transactionIdInput = document.getElementById('transaction_id');
 var transactionIdValue = transactionIdInput.value;
-  window.open('http://92.255.107.213:2000/admin/transaction/edit/?id=' +transactionIdValue + '&url=%2Fadmin%2Ftransaction%2F', '_blank');
+  window.open('http://127.0.0.1:2000/admin/transaction/edit/?id=' +transactionIdValue + '&url=%2Fadmin%2Ftransaction%2F', '_blank');
 
 }
 </script>
                                                       '''))
-
-
-
 
 def main():
     user_config = get_user_config()
@@ -120,8 +146,10 @@ def main():
         def index(self):
             current_time = dt.datetime.now()
             start_time = current_time - dt.timedelta(minutes=60)
-            triggered_rules = rule_result.query.filter(rule_result.normalized_datetime >= start_time).count()
-            created_alerts = alert.query.filter(alert.normalized_datetime >= start_time).count()
+            from sqlalchemy import and_
+
+            triggered_rules = rule_result.query.filter(and_(rule_result.normalized_datetime >= start_time, rule_result.rule_result == True)).count()
+            created_alerts = alert.query.filter(and_(alert.normalized_datetime >= start_time, alert.status==STATUS_CHOICES_ENUM.FRAUD)).count()
             alerts = alert.query.filter(alert.normalized_datetime >= start_time)
             
             labels = []
@@ -129,9 +157,10 @@ def main():
             alerts_arr = []
             
             conn.cur.execute("""
-            SELECT date_trunc('minute', normalized_datetime) AS minute, COUNT(*) AS count
+SELECT date_trunc('minute', normalized_datetime) AS minute, COUNT(*) AS count
             FROM rule_Result r
             WHERE normalized_datetime >= NOW() - INTERVAL '60 minutes'
+			and rule_result=true
             GROUP BY minute, r.rule_result
             ORDER BY minute ASC;""")
             rules_arr = conn.cur.fetchall()
@@ -141,6 +170,7 @@ def main():
             SELECT date_trunc('minute', normalized_datetime) AS minute, COUNT(*) AS count
             FROM alerts r
             WHERE normalized_datetime >= NOW() - INTERVAL '60 minutes'
+			and "Alert status"::text = 'FRAUD'
             GROUP BY minute
             ORDER BY minute ASC;""")
             alerts_sql = conn.cur.fetchall()
@@ -148,8 +178,14 @@ def main():
             
             rules_array_counter = 0
             alerts_array_counter = 0
+            
+            print('rules_arr')
+            print(rules_arr)
+            import random
+            
             for i in range(60):
-                current_time = round_time.round_to_min(dt.datetime.now() - dt.timedelta(minutes=(60-i)))
+                current_time = round_time.round_to_min(dt.datetime.now() - dt.timedelta(minutes=(59-i)))
+                print(current_time)
                 labels.append(i)
                 if rules_array_counter < len(rules_arr) and rules_arr[rules_array_counter][0] == current_time:
                     rules.append(rules_arr[rules_array_counter][1])
@@ -163,61 +199,33 @@ def main():
                 else:
                     alerts_arr.append(0)
             
-            import random
-            rules = []
-            for _ in range(60):
-                value = random.randint(10, 40)  # Генерация случайного числа от 1 до 40
-                rules.append(value)
-                        # Создание второго массива
-            alerts_arr = []
-            for _ in range(60):
-                value = random.randint(1, 10)  # Генерация случайного числа от 1 до последнего значения в первом массиве
-                alerts_arr.append(value)
+            print('labels')
+            print(labels)
+            print('rules')
+            print(rules)
+            print('alerts_arr')
+            print(alerts_arr)
+            # rules = []
+            # for _ in range(60):
+            #     value = random.randint(10, 40)  # Генерация случайного числа от 1 до 40
+            #     rules.append(value)
+            #             # Создание второго массива
+            # alerts_arr = []
+            # for _ in range(60):
+            #     value = random.randint(1, 10)  # Генерация случайного числа от 1 до последнего значения в первом массиве
+            #     alerts_arr.append(value)
                                         
+            #triggered_rules = sum(rules)
+            #created_alerts = sum(alerts_arr)
+            
             triggered_rules = sum(rules)
             created_alerts = sum(alerts_arr)
 
             return self.render('admin/graph.html', labels=labels, data1=rules, data2=alerts_arr, rules_triggered=triggered_rules, alerts=alerts, alerts_count=created_alerts)
-            #conn.cur.execute("""SELECT date_trunc('minute', normalized_datetime) AS minute, COUNT(*) AS count, r.rule_result
-            #                    FROM rule_Result r
-            #                    WHERE normalized_datetime >= NOW() - INTERVAL '60 minutes'
-            #                    GROUP BY minute, r.rule_result
-            #                    ORDER BY minute ASC;
-            #                    """)
-            #res = conn.cur.fetchall()
-            #conn.conn.commit()
-            #labels = []
-            #data1 = []
-            #data2 = []
-            #myCounter = 0
-            #for i in range(60):
-            #    tm = round_time.round_to_min(dt.datetime.now() - dt.timedelta(minutes=(60-i)))
-            #    if myCounter < len(res) and tm == res[myCounter][0]:   
-            #        labels.append(myCounter)
-            #        if res[myCounter][2] == True:
-            #            data1.append(res[myCounter][1])
-            #        else:
-            #            data2.append(res[myCounter][1])
-            #        myCounter += 1 
-            #        if myCounter >= len(res):
-            #            break
-            #        if res[myCounter][2] == True:
-            #            data1.append(res[myCounter][1])
-            #        else:
-            #            data2.append(res[myCounter][1])
-            #        myCounter += 1 
-            #    else:
-            #        data1.append(0)
-            #        data2.append(0)
-            #        labels.append(i)
-            #res = alert.query.all()
-            #lenn = len(res)
-            #return self.render('admin/graph.html', labels=labels, data1=data1, data2=data2, rules_triggered=myCounter, alerts=res, #alerts_count=lenn)
-
     
     app = Flask(__name__)
     app.secret_key = 'my_secret_key'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:password@127.0.0.1:5432/antifraud'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@127.0.0.1:5432/AntiFraud'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_ECHO'] = False
 
@@ -232,8 +240,6 @@ def main():
     admin.add_view(ModelView(PlatformList, db.session, name="Списки"))
     admin.add_view(ModelView(rule_result, db.session, name="Результаты сработки правил"))
     admin.add_view(ModelView(profiles, db.session, name="Профили"))
-    #admin.add_view(ModelView(alert, db.session, name="Оповещения"))
-    #admin.add_view(UserAdminView(alert, db.session, name="AA"))
     admin.add_view(RuleView(alert, db.session, name="Оповещения"))
     
     from flask_admin.menu import MenuLink
@@ -249,7 +255,7 @@ def main():
             return response
         except Exception as e:
             logging.error(e)
-            return Response(response = "Bad message!", status = 503)
+            return Response(response = "ALLOW", status = 503)
     
     @app.route('/transactions_view')
     def index():
@@ -365,9 +371,19 @@ ORDER BY minute ASC;
     @app.route('/home', methods=['GET'])
     def process_api_request3():
         return render_template('home.html')
+    
+    @app.route('/api/generate_random_clients/<string:id>', methods=['GET'])
+    def get_random_clients(id):
+        clients = []
+        for i in range(int(id)):
+            clients.append(get_random_person())
+        res = json.dumps(clients)
+        
+        response = jsonify(clients)
+        response.headers.add('Access-Control-Allow-Origin', '*')
+        return response
 
-    app.run(debug=True,port=2000, host='0.0.0.0')
-    #app.run(debug=True,port=2000)
+    app.run(debug=True,port=2000, host='0.0.0.0', threaded=True)
 
 if __name__ == '__main__':
     main()
